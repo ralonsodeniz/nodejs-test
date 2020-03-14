@@ -10,7 +10,9 @@ const {
   deleteAllClients,
   deleteAllPolicies,
   getClientById,
-  getClientByName
+  getClientByName,
+  getClientByPolicyId,
+  getClientPolicies
 } = require("./handlers/handlers");
 
 app.use(cors());
@@ -22,5 +24,12 @@ app.delete("/policies/delete", deleteAllPolicies);
 
 app.get("/clients/clientId/:clientId", AuthCheck("both"), getClientById);
 app.get("/clients/clientName/:clientName", AuthCheck("both"), getClientByName);
+app.get("/clients/policyId/:policyId", AuthCheck("admin"), getClientByPolicyId);
+
+app.get(
+  "/policies/clientName/:clientName",
+  AuthCheck("admin"),
+  getClientPolicies
+);
 
 exports.api = functions.region("europe-west1").https.onRequest(app);

@@ -130,3 +130,57 @@ exports.getClientByName = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.getClientByPolicyId = async (req, res) => {
+  const requestedPolicyId = req.params.policyId;
+
+  try {
+    const policyRef = db.doc(`policies/${requestedPolicyId}`);
+    const policySnapshot = await policyRef.get();
+
+    if (!policySnapshot.exists)
+      return res.status(404).json({ error: "policy not found" });
+
+    const policyData = policySnapshot.data();
+    const { clientId } = policyData;
+    const clientRef = db.doc(`clients/${clientId}`);
+    const clientsSnapshot = await clientRef.get();
+    const clientData = clientsSnapshot.data();
+    return res.json(clientData);
+  } catch (error) {
+    console.log("error while getting client data", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getClientPolicies = async (req, res) => {
+  const requestedName = req.params.clientName;
+  try {
+    const requestedSnapshotObj = await db
+      .collection("clients")
+      .where("name", "==", requestedName)
+      .limit(1)
+      .get();
+
+    if (requestedSnapshotObj.empty)
+      return res.status(404).json({ error: "client not found" });
+
+    const clientData = requestedSnapshotObj.docs[0].data();
+    const { id } = clientData;
+    const clientPoliciesSnapshotObj = await db
+      .collection("policies")
+      .where("clientId", "==", id)
+      .get();
+
+    if (clientPoliciesSnapshotObj.empty)
+      return res.status(404).json({ error: "client has no policies" });
+    console.log(clientPoliciesSnapshotObj.docs.length);
+
+    const clientPoliciesDocs = clientPoliciesSnapshotObj.docs;
+    const clientPolicies = clientPoliciesDocs.map(doc => doc.data());
+    return res.json(clientPolicies);
+  } catch (error) {
+    console.log("error while getting client data", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+};
