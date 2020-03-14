@@ -75,3 +75,58 @@ exports.deleteAllPolicies = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.getClientById = async (req, res) => {
+  const requestedId = req.params.clientId;
+  const requesterId = req.headers.authorization;
+  const requesterRole = req.role;
+
+  if (requesterRole === "user" && requestedId !== requesterId)
+    return res.status(403).json({ error: "insuficent authorization" });
+
+  try {
+    const requestedRef = db.doc(`clients/${requestedId}`);
+    const requestedSnapshot = await requestedRef.get();
+
+    if (!requestedSnapshot.exists)
+      return res.status(404).json({ error: "client not found" });
+    const clientData = requestedSnapshot.data();
+    return res.json(clientData);
+  } catch (error) {
+    console.log("error while getting client data", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getClientByName = async (req, res) => {
+  const requestedName = req.params.clientName;
+  const requesterId = req.headers.authorization;
+  const requesterRole = req.role;
+
+  try {
+    if (requesterRole === "user") {
+      const requesterReference = db.doc(`clients/${requesterId}`);
+      const requesterSnapshot = await requesterReference.get();
+      const requesterData = requesterSnapshot.data();
+      const { name } = requesterData;
+
+      if (name !== requestedName)
+        return res.status(403).json({ error: "insuficent authorization" });
+    }
+
+    const requestedSnapshotObj = await db
+      .collection("clients")
+      .where("name", "==", requestedName)
+      .limit(1)
+      .get();
+
+    if (requestedSnapshotObj.empty)
+      return res.status(404).json({ error: "client not found" });
+
+    const clientData = requestedSnapshotObj.docs[0].data();
+    return res.json(clientData);
+  } catch (error) {
+    console.log("error while getting client data", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+};
