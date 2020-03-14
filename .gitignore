@@ -33,3 +33,4 @@ storage.rules
 /functions/node_modules/
 /functions/.env*
 /functions/config
+/functions/firebase-debug.log
